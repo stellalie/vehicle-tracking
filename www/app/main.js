@@ -12,14 +12,17 @@ require.config({
 
 require([
     'jquery',
-    'appController'
-], function ($, AppController) {
+    'appController',
+    'webix'
+], function ($, AppController, Webix) {
 
     $(function () {
-        var app = new AppController({
-            el: '#dashboard'
+        webix.ready(function () {
+            var app = new AppController({
+                el: '#dashboard'
+            });
+            app.render();
         });
-        app.render();
     });
 
 });

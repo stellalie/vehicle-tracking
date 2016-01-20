@@ -2,6 +2,7 @@
 define([
     'underscore',
     'backbone',
+    'https://maps.googleapis.com/maps/api/js?key=AIzaSyDaMxM2Kuk2Ei0Oo82StL66ve3fr826AX0',
     'webix'
 ], function (_, Backbone) {
     'use strict';
@@ -9,32 +10,38 @@ define([
     return Backbone.Model.extend({
 
         getWebixModel: function () {
-
             return {
-
                 name: "google-map",
-                $init: function (config) {
-                    this.$view.innerHTML = "<div class='webix_map_content' style='width:100%;height:100%'></div>";
+                defaults: {
+                    zoom: 15,
+                    center: [39.5, -98.5],
+                    mapType: "ROADMAP"
+                },
+                $init: function () {
+                    this.$view.innerHTML = "<div class='thingosity_map_content' style='width:100%;height:100%'></div>";
                     this._contentobj = this.$view.firstChild;
 
                     this.map = null;
                     this.$ready.push(this.render);
                 },
                 render: function () {
-                    if (typeof google == "undefined" || typeof google.maps == "undefined") {
-                        var name = "webix_callback_" + webix.uid();
-                        window[name] = webix.bind(function () {
-                            this._initMap.call(this, true);
-                        }, this);
-
-                        var script = document.createElement("script");
-                        script.type = "text/javascript";
-                        script.src = "//maps.google.com/maps/api/js?sensor=false&callback=" + name;
-                        document.getElementsByTagName("head")[0].appendChild(script);
-                    } else
-                        this._initMap();
+                    this._initMap();
                 },
-                _initMap: function (define) {
+                loadCoordinates: function (coordinates) {
+                    var path = new google.maps.Polyline({
+                        path: coordinates,
+                        geodesic: true,
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    });
+                    path.setMap(this.map);
+
+                    // Center map
+                    var lastCoordinate = coordinates.slice(-1)[0];
+                    this.map.setCenter(lastCoordinate);
+                },
+                _initMap: function () {
                     var c = this.config;
 
                     this.map = new google.maps.Map(this._contentobj, {
@@ -43,35 +50,6 @@ define([
                         mapTypeId: google.maps.MapTypeId[c.mapType]
                     });
                     webix._ldGMap = null;
-                },
-                center_setter: function (config) {
-                    if (this.map)
-                        this.map.setCenter(new google.maps.LatLng(config[0], config[1]));
-
-                    return config;
-                },
-                mapType_setter: function (config) {
-                    /*ROADMAP,SATELLITE,HYBRID,TERRAIN*/
-                    if (this.map)
-                        this.map.setMapTypeId(google.maps.MapTypeId[config]);
-
-                    return config;
-                },
-                zoom_setter: function (config) {
-                    if (this.map)
-                        this.map.setZoom(config);
-
-                    return config;
-                },
-                defaults: {
-                    zoom: 5,
-                    center: [39.5, -98.5],
-                    mapType: "ROADMAP"
-                },
-                $setSize: function () {
-                    webix.ui.view.prototype.$setSize.apply(this, arguments);
-                    if (this.map)
-                        google.maps.event.trigger(this.map, "resize");
                 }
             };
         }
