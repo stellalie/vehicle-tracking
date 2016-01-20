@@ -41,6 +41,31 @@ define([
                     var lastCoordinate = coordinates.slice(-1)[0];
                     this.map.setCenter(lastCoordinate);
                 },
+                showCoordinateOnMap: function (data) {
+                    var lat = data.lat;
+                    var lng = data.lng;
+                    var timestamp = data.timestamp;
+                    var latLng = {lat: lat, lng: lng};
+
+                    if (!_.isEmpty(this.marker)) {
+                        this.marker.setMap(null);
+                    }
+                    this.marker = new google.maps.Marker({
+                        animation: google.maps.Animation.DROP,
+                        position: latLng,
+                        map: this.map
+                    });
+
+                    var infowindow = new google.maps.InfoWindow({
+                        content:
+                            '<strong>Lat</strong>:' + lat + '<br>' +
+                            '<strong>Lng</strong>:' + lng + '<br>' +
+                            '<strong>Timestamp</strong>:' + timestamp + '<br>'
+                    });
+                    infowindow.open(this.map, this.marker);
+
+                    this.map.setCenter(latLng);
+                },
                 _initMap: function () {
                     var c = this.config;
 
