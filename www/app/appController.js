@@ -14,25 +14,41 @@ define([
 
     return Backbone.View.extend({
 
-        configForm: {
-            header: "Config",
+        devicesPanel: {
+            header: "Devices",
             body: {
-                view: "form",
-                id: "configForm",
-                width: 300,
-                elements: [
-                    { view: "text", label: "Thing ID" },
-                    { view: "text", type: "text", label: "Item Type" },
+                rows: [
                     {
-                        cols: [
-                            { view: "button", value: "View", type: "form" }
-                        ]
+                        view: "form",
+                        id: "deviceAddForm",
+                        width: 300,
+                        elements: [
+                            {
+                                cols: [
+                                    { view: "text", placeholder: "Thing ID", name: "thingId" },
+                                    { view: "text", type: "text", placeholder: "Item Key", name:"itemKey" },
+                                    { view: "button", value: "Add", name: "addButton", type: "form", width: 80 }
+                                ]
+                            }
+                        ],
+                        rules: {
+                            "thingId": webix.rules.isNotEmpty,
+                            "itemKey": webix.rules.isNotEmpty
+                        }
+                    },
+                    {
+                        id: "deviceList",
+                        view: "list",
+                        template: "#thingId# - #itemKey#",
+                        data: [],
+                        yCount: 3,
+                        autoheight:true,
                     }
                 ]
             }
         },
 
-        coordinateTable: {
+        coordinatePanel: {
             header: "Coordinates",
             body: {
                 id: "coordinates",
@@ -73,8 +89,8 @@ define([
                     {
                         width: 500,
                         rows: [
-                            this.configForm,
-                            this.coordinateTable
+                            this.devicesPanel,
+                            this.coordinatePanel
                         ]
                     },
                     { view: "resizer" },
@@ -82,23 +98,54 @@ define([
                 ]
             });
 
-            // Hack data
-            // TODO: Replace this!
-            var result = webix.ajax().sync().get("http://localhost:1337/things/api/data/vehicle3");
-            var response = JSON.parse(result.responseText);
-            var coordinates = this.buildCoordinatesFromRawData(response.data.coords1.data);
+            $$("deviceAddForm").elements["addButton"].attachEvent("onItemClick", function () {
+                var form = $$("deviceAddForm");
+
+                // Form validation
+                if (!form.validate()) {
+                    webix.message("Neither form values can't be empty");
+                    return;
+                }
+
+                // Try to load data via Thingosity API
+                var formValues = form.getValues();
+                var thingId = formValues.thingId;
+                var itemKey = formValues.itemKey;
+                try {
+                    var url = "http://localhost:1337/things/api/data/" + thingId + "?itemKey=" + itemKey; // TODO: configure localhost URL at config
+                    var result = webix.ajax().sync().get(url);
+                    var parsedResult = JSON.parse(result.responseText);
+                } catch (e) {
+                    webix.message(e.message);
+                    return;
+                }
+
+                // Try validate the response data
+                if (result.status !== 200 || _.isUndefined(parsedResult.data)) {
+                    webix.message("Unable to retrive data from " . url);
+                    return;
+                }
+
+                // Add devices onto the deviceList view
+                $$("deviceList").add({
+                    thingId: thingId,
+                    itemKey: itemKey
+                });
+
+                // Update points on map
+                var rawCoordinates = parsedResult.data[formValues.itemKey].data;
+                this.updateMap(rawCoordinates);
+            }.bind(this));
+        },
+
+        updateMap: function (rawCoordinates) {
+            var coordinates = this.buildCoordinatesFromRawData(rawCoordinates);
 
             $$("map").loadCoordinates(coordinates);
-
             $$("coordinates").parse(coordinates);
             $$("coordinates").attachEvent("onAfterSelect", function (){
                 $$("map").showCoordinateOnMap(this.getSelectedItem());
-            });
-
-            $$("configForm").attachEvent("onChange", function () {
-                // TODO: I don't know why this doesnt work!
-                debugger;
-            });
+            })
         },
 
         buildCoordinatesFromRawData: function (data) {
