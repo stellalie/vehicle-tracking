@@ -14,16 +14,8 @@ define([
 
     return Backbone.View.extend({
 
-        settingsPanel: {
-            header: "Settings",
-            collapsed: true,
-            width: 300,
-            body: {
-            }
-        },
-
         devicesPanel: {
-            header: "Devices",
+            header: "Devices & Settings",
             body: {
                 rows: [
                     {
@@ -59,13 +51,30 @@ define([
         coordinatePanel: {
             header: "Coordinates",
             body: {
-                id: "coordinates",
-                view: "datatable",
-                columns: [],
-                select: "row",
-                multiselect: true,
-                clipboard: "copy",
-                scrollX: false
+                rows: [
+                    {
+                        view: "form",
+                        id: "filterForm",
+                        elements: [
+                            {
+                                cols: [
+                                    { view: "datepicker", label: 'Start Time', timepicker: true },
+                                    { view: "datepicker", label: 'End Time', timepicker: true },
+                                    { view: "button", value: "Filter", name: "filterButton", type: "form" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "coordinates",
+                        view: "datatable",
+                        columns: [],
+                        select: "row",
+                        multiselect: true,
+                        clipboard: "copy",
+                        scrollX: false
+                    }
+                ]
             }
         },
 
@@ -90,7 +99,6 @@ define([
                     {
                         height: 300,
                         cols: [
-                            this.settingsPanel,
                             this.devicesPanel,
                             this.coordinatePanel
                         ]
