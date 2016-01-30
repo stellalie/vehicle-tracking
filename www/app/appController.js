@@ -118,8 +118,8 @@ define([
             var thingId = formValues.thingId;
             var itemKey = formValues.itemKey;
 
-            var thingId = 'vehicle2';
-            var coordinateItemKey = 'coord';
+            var thingId = 'frank-test-1';
+            var coordinateItemKey = 'coords1';
 
             var result = this.getData("http://localhost:1337/things/api/data/" + thingId);
             var config = this.getData("http://localhost:1337/things/api/config/" + thingId);
@@ -134,9 +134,7 @@ define([
             });
 
             // Update points on map
-            var groupedData = this.groupData(result.data, config.data);
-            var groupedAggregatedData = this.aggregateData(groupedData, config.data);
-
+            var groupedAggregatedData = this.aggregateData(this.groupData(result.data, config.data), config.data);
             var coordinateData = this.buildCoordinateData(groupedAggregatedData, coordinateItemKey);
             var tableData = this.buildTableData(groupedAggregatedData, config.data);
             var tableColumns = this.buildTableColumn(config.data);
@@ -155,7 +153,8 @@ define([
             var groupedData = {};
 
             for (var itemKey in result) {
-                if (!result.hasOwnProperty(itemKey)) {
+                // Also ignore thoes data that does not exists in config (??)
+                if (!result.hasOwnProperty(itemKey) || !config.hasOwnProperty(itemKey)) {
                     continue;
                 }
                 var isCoords = config[itemKey].type === 'geolocation';
@@ -267,11 +266,14 @@ define([
                     continue;
                 }
                 var timestampData = data[timestamp][coordinateItemKey];
-                coordinates.push({
-                    lat: timestampData.lat,
-                    lng: timestampData.lng,
-                    timestamp: timestamp
-                });
+                // Make sure location exists
+                if (!_.isUndefined(timestampData)) {
+                    coordinates.push({
+                        lat: timestampData.lat,
+                        lng: timestampData.lng,
+                        timestamp: timestamp
+                    });
+                }
             }
             return coordinates;
         },

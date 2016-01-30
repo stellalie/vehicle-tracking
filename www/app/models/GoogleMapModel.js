@@ -42,8 +42,14 @@ define([
                     this.map.setCenter(lastCoordinate);
                 },
                 showCoordinateOnMap: function (data, config, coordinateItemKey) {
+                    debugger;
                     var lat = data[coordinateItemKey + 'lat'];
                     var lng = data[coordinateItemKey + 'lng'];
+
+                    if (_.isUndefined(lat) || _.isUndefined(lng)) {
+                        webix.message('Geolocation data is not available for this data point');
+                    }
+
                     var timestamp = data.timestamp;
                     var latLng = {lat: lat, lng: lng};
 
@@ -67,7 +73,12 @@ define([
                         var itemKeyConfig = config[itemKey];
                         content.push('<strong>' + itemKeyConfig.name + '</strong>: ' + itemKeyValue);
                     }
-                    var infowindow = new google.maps.InfoWindow({ content: content.join('<br/>')});
+                    if (!_.isEmpty(content)) {
+                        content = content.join('<br/>');
+                    } else {
+                        content = 'Not data available';
+                    }
+                    var infowindow = new google.maps.InfoWindow({ content: content});
                     infowindow.open(this.map, this.marker);
 
                     this.map.setCenter(latLng);
