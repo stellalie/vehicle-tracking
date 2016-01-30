@@ -41,9 +41,9 @@ define([
                     var lastCoordinate = coordinates.slice(-1)[0];
                     this.map.setCenter(lastCoordinate);
                 },
-                showCoordinateOnMap: function (data) {
-                    var lat = data.lat;
-                    var lng = data.lng;
+                showCoordinateOnMap: function (data, config, coordinateItemKey) {
+                    var lat = data[coordinateItemKey + 'lat'];
+                    var lng = data[coordinateItemKey + 'lng'];
                     var timestamp = data.timestamp;
                     var latLng = {lat: lat, lng: lng};
 
@@ -56,12 +56,18 @@ define([
                         map: this.map
                     });
 
-                    var infowindow = new google.maps.InfoWindow({
-                        content:
-                            '<strong>Lat</strong>:' + lat + '<br>' +
-                            '<strong>Lng</strong>:' + lng + '<br>' +
-                            '<strong>Timestamp</strong>:' + timestamp + '<br>'
-                    });
+                    var content = [];
+                    for (var itemKey in data) {
+                        // TODO: To avoid if its `timestamp` column
+                        // TODO: Atm, geolocation data is ignored due to the hacky + 'lng'/'lat' implementation
+                        if (!data.hasOwnProperty(itemKey) || !config.hasOwnProperty(itemKey)) {
+                            continue;
+                        }
+                        var itemKeyValue = data[itemKey];
+                        var itemKeyConfig = config[itemKey];
+                        content.push('<strong>' + itemKeyConfig.name + '</strong>: ' + itemKeyValue);
+                    }
+                    var infowindow = new google.maps.InfoWindow({ content: content.join('<br/>')});
                     infowindow.open(this.map, this.marker);
 
                     this.map.setCenter(latLng);
