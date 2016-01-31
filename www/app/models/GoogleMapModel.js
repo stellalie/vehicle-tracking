@@ -42,9 +42,8 @@ define([
                     this.map.setCenter(lastCoordinate);
                 },
                 showCoordinateOnMap: function (data, config, coordinateItemKey) {
-                    debugger;
-                    var lat = data[coordinateItemKey + 'lat'];
-                    var lng = data[coordinateItemKey + 'lng'];
+                    var lat = data['col_' + coordinateItemKey + '_lat'];
+                    var lng = data['col_' + coordinateItemKey + '_lng'];
 
                     if (_.isUndefined(lat) || _.isUndefined(lng)) {
                         webix.message('Geolocation data is not available for this data point');
@@ -63,13 +62,18 @@ define([
                     });
 
                     var content = [];
-                    for (var itemKey in data) {
+                    for (var columnName in data) {
                         // TODO: To avoid if its `timestamp` column
                         // TODO: Atm, geolocation data is ignored due to the hacky + 'lng'/'lat' implementation
-                        if (!data.hasOwnProperty(itemKey) || !config.hasOwnProperty(itemKey)) {
+                        if (!data.hasOwnProperty(columnName)) {
                             continue;
                         }
-                        var itemKeyValue = data[itemKey];
+                        // TODO: This still won't work if itemkey has `col_` - NEED FIX
+                        var itemKey = columnName.replace('col_', '');
+                        if (!config.hasOwnProperty(itemKey)) {
+                            continue
+                        }
+                        var itemKeyValue = data[columnName];
                         var itemKeyConfig = config[itemKey];
                         content.push('<strong>' + itemKeyConfig.name + '</strong>: ' + itemKeyValue);
                     }

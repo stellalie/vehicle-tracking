@@ -16,6 +16,7 @@ define([
 
         devicesPanel: {
             header: "Devices & Settings",
+            collapsed: true,
             body: {
                 rows: [
                     {
@@ -70,9 +71,7 @@ define([
                         view: "datatable",
                         columns: [],
                         select: "row",
-                        multiselect: true,
-                        clipboard: "copy",
-                        scrollX: false
+                        resizeColumn:true
                     }
                 ]
             }
@@ -126,8 +125,9 @@ define([
             var thingId = formValues.thingId;
             var itemKey = formValues.itemKey;
 
-            var thingId = 'frank-test-1';
-            var coordinateItemKey = 'coords1';
+            //var thingId = 'vehicle2';
+            var thingId = 'stanley-test-1';
+            var coordinateItemKey = 'coord';
 
             var result = this.getData("http://localhost:1337/things/api/data/" + thingId);
             var config = this.getData("http://localhost:1337/things/api/config/" + thingId);
@@ -152,7 +152,7 @@ define([
             $$("coordinates").parse(tableData);
             $$("coordinates").attachEvent("onAfterSelect", function () {
                 $$("map").showCoordinateOnMap(this.getSelectedItem(), config.data, coordinateItemKey);
-            })
+            });
         },
 
         // @ref: http://stackoverflow.com/questions/23763996/group-by-timestamp-with-aggregation-framework-in-mongodb
@@ -222,9 +222,9 @@ define([
 
         aggregateDataByType: function (itemKeyData, itemKeyType) {
             if (itemKeyType === 'number' || itemKeyType === 'dimmer') {
-                return this.calculateAverage(itemKeyData);
+                return this.calculateAverage(itemKeyData).toFixed(4);
             } else if (itemKeyType === 'switch') {
-                return this.calculateMedian(itemKeyData);
+                return this.calculateMedian(itemKeyData).toFixed(4);
             } else if (itemKeyType === 'geolocation') {
                 return {
                     lat: this.calculateAverage(_.pluck(itemKeyData, 'lat')),
@@ -303,10 +303,10 @@ define([
                     var isCoords = config[itemKey].type === 'geolocation';
                     var itemKeyData = timestampData[itemKey];
                     if (isCoords) {
-                        rowData[itemKey + 'lat'] = itemKeyData.lat;
-                        rowData[itemKey + 'lng'] = itemKeyData.lng;
+                        rowData['col_' + itemKey + '_lat'] = itemKeyData.lat;
+                        rowData['col_' + itemKey + '_lng'] = itemKeyData.lng;
                     } else {
-                        rowData[itemKey] = itemKeyData;
+                        rowData['col_' + itemKey] = itemKeyData;
                     }
                 }
                 tableData.push(rowData);
@@ -326,21 +326,26 @@ define([
             _.each(config, function (element, itemKey) {
                 if (element.type == 'geolocation') {
                     this.push({
-                        map: "#" + itemKey + "lat#",
-                        header: element.name + " (Lat)",
-                        fillspace: 1, css: "number"
+                        map: "#col_" + itemKey + "_lat#",
+                        header: element.name + " (Lat)"
                     });
                     this.push({
-                        map: "#" + itemKey + "lng#",
-                        header: element.name + " (Lng)",
-                        fillspace: 1, css: "number"
+                        map: "#col_" + itemKey + "_lng#",
+                        header: element.name + " (Lng)"
                     });
                 } else {
+                    //var isNumeric =  !isNaN(parseFloat(itemKey)) && isFinite(itemKey);
+                    //var startsWith1 = itemKey.substring(0, 1) === '1';
+                    //if (!isNumeric && !startsWith1) {
+                    //    this.push({
+                    //        map: "#" + itemKey + "#",
+                    //        header: element.name
+                    //    });
+                    //}
                     this.push({
-                        map: "#" + itemKey + "#",
-                        header: element.name,
-                        fillspace: 1, css: "number"
-                    })
+                        map: "#col_" + itemKey + "#",
+                        header: element.name
+                    });
                 }
             }, columns);
             return columns;
