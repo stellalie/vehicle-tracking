@@ -17,31 +17,108 @@ define([
                     center: [39.5, -98.5],
                     mapType: "ROADMAP"
                 },
+                markers : {},
+
                 $init: function () {
-                    this.$view.innerHTML = "<div class='thingosity_map_content' style='width:100%;height:100%'></div>";
+                    this.$view.innerHTML = "<div class='thingosity_map_content' style='width:100%; height:100%'></div>";
                     this._contentobj = this.$view.firstChild;
 
                     this.map = null;
                     this.$ready.push(this.render);
                 },
+
                 render: function () {
                     this._initMap();
                 },
-                loadCoordinates: function (coordinates) {
+
+                loadCoordinates: function (coordinates, groupedAggregatedData, config, coordinateItemKey) {
                     var path = new google.maps.Polyline({
                         path: coordinates,
                         geodesic: true,
-                        strokeColor: '#FF0000',
-                        strokeOpacity: 1.0,
-                        strokeWeight: 2
+                        strokeOpacity: 3,
+                        strokeColor: '#0000ff',
+                        strokeWeight: 2,
+                        icons: [
+                            {
+                                icon: {
+                                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                    strokeColor: '#0000ff',
+                                    fillColor: '#0000ff',
+                                    fillOpacity: 0.5
+                                },
+                                repeat: '100px',
+                                path: []
+                            }
+                        ]
                     });
                     path.setMap(this.map);
+
+                    // Load markers
+                    this.markers = [];
+                    _.each(groupedAggregatedData, function (data) {
+                        this._loadMarker(data, config, coordinateItemKey);
+                    }, this);
 
                     // Center map
                     var lastCoordinate = coordinates.slice(-1)[0];
                     this.map.setCenter(lastCoordinate);
                 },
-                showCoordinateOnMap: function (data, config, coordinateItemKey) {
+
+                _loadMarker: function (data, config, coordinateItemKey) {
+                    if (_.isUndefined(data[coordinateItemKey])) {
+                        // TODO: Perhaps we need to get data before and after (??)
+                        webix.message('Geolocation data is not available for this data point');
+                        return false;
+                    }
+
+                    var latLng = {
+                        lat: data[coordinateItemKey].lat,
+                        lng: data[coordinateItemKey].lng
+                    };
+
+                    var content = [];
+                    for (var itemKey in data) {
+                        // TODO: To avoid if its `timestamp` column
+                        // TODO: Atm, geolocation data is ignored due to the hacky + 'lng'/'lat' implementation
+                        if (!data.hasOwnProperty(itemKey)) {
+                            continue;
+                        }
+
+                        var itemKeyValue = JSON.stringify(data[itemKey]);
+                        var itemKeyConfig = config[itemKey];
+                        content.push('<strong>' + itemKeyConfig.name + '</strong>: ' + itemKeyValue);
+                    }
+                    if (!_.isEmpty(content)) {
+                        content = content.join('<br/>');
+                    } else {
+                        content = 'Not data available';
+                    }
+
+                    var marker = new google.maps.Marker({
+                        position: latLng,
+                        map: this.map
+                    });
+
+                    var self = this;
+                    marker.addListener('click', function() {
+                        self._showInfoWindow(marker, content);
+                    });
+
+                    this.markers.push(marker);
+                },
+
+                _showInfoWindow: function (marker, content) {
+                    // Close existing infoWindow if exists
+                    if (!_.isUndefined(this.currentInfoWindow)) {
+                        this.currentInfoWindow.close();
+                    }
+                    // Then, open a new one
+                    var infowindow = new google.maps.InfoWindow({ content: content });
+                    infowindow.open(this.map, marker);
+                    this.currentInfoWindow = infowindow;
+                },
+
+                showCoordinateOnMap: function (data, config, coordinateItemKey, directionItemKey) {
                     var lat = data['col_' + coordinateItemKey + '_lat'];
                     var lng = data['col_' + coordinateItemKey + '_lng'];
 
@@ -49,17 +126,9 @@ define([
                         webix.message('Geolocation data is not available for this data point');
                     }
 
-                    var timestamp = data.timestamp;
-                    var latLng = {lat: lat, lng: lng};
-
                     if (!_.isEmpty(this.marker)) {
                         this.marker.setMap(null);
                     }
-                    this.marker = new google.maps.Marker({
-                        animation: google.maps.Animation.DROP,
-                        position: latLng,
-                        map: this.map
-                    });
 
                     var content = [];
                     for (var columnName in data) {
@@ -82,11 +151,17 @@ define([
                     } else {
                         content = 'Not data available';
                     }
-                    var infowindow = new google.maps.InfoWindow({ content: content});
-                    infowindow.open(this.map, this.marker);
 
+                    var timestamp = data.timestamp;
+                    var latLng = { lat: lat, lng: lng };
+                    this.marker = new google.maps.Marker({
+                        position: latLng,
+                        map: this.map
+                    });
+                    this._showInfoWindow(this.marker, content);
                     this.map.setCenter(latLng);
                 },
+
                 _initMap: function () {
                     var c = this.config;
 

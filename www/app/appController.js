@@ -125,8 +125,8 @@ define([
             var thingId = formValues.thingId;
             var itemKey = formValues.itemKey;
 
-            //var thingId = 'vehicle2';
-            var thingId = 'stanley-test-1';
+            var thingId = 'vehicle4';
+            //var thingId = 'stanley-test-1';
             var coordinateItemKey = 'coord';
 
             var result = this.getData("http://localhost:1337/things/api/data/" + thingId);
@@ -147,7 +147,7 @@ define([
             var tableData = this.buildTableData(groupedAggregatedData, config.data);
             var tableColumns = this.buildTableColumn(config.data);
 
-            $$("map").loadCoordinates(coordinateData);
+            $$("map").loadCoordinates(coordinateData, groupedAggregatedData, config.data, coordinateItemKey);
             $$("coordinates").refreshColumns(tableColumns);
             $$("coordinates").parse(tableData);
             $$("coordinates").attachEvent("onAfterSelect", function () {
@@ -334,14 +334,6 @@ define([
                         header: element.name + " (Lng)"
                     });
                 } else {
-                    //var isNumeric =  !isNaN(parseFloat(itemKey)) && isFinite(itemKey);
-                    //var startsWith1 = itemKey.substring(0, 1) === '1';
-                    //if (!isNumeric && !startsWith1) {
-                    //    this.push({
-                    //        map: "#" + itemKey + "#",
-                    //        header: element.name
-                    //    });
-                    //}
                     this.push({
                         map: "#col_" + itemKey + "#",
                         header: element.name
