@@ -4,102 +4,46 @@ define([
     'jquery',
     'backbone',
     'models/GoogleMapModel',
+    'models/DevicePanelModel',
+    'models/DataTableModel',
     'utils/dateUtil',
     'webix'
 ], function (_,
              $,
              Backbone,
-             GoogleMapModel) {
+             GoogleMapModel,
+             DevicePanelModel,
+             DataTableModel) {
     'use strict';
 
     return Backbone.View.extend({
 
-        devicesPanel: {
-            header: "Devices & Settings",
-            collapsed: true,
-            body: {
-                rows: [
-                    {
-                        view: "form",
-                        id: "deviceAddForm",
-                        width: 300,
-                        elements: [
-                            {
-                                cols: [
-                                    { view: "text", placeholder: "Thing ID", name: "thingId" },
-                                    { view: "text", type: "text", placeholder: "Item Key", name:"itemKey" },
-                                    { view: "button", value: "Add", name: "addButton", type: "form", width: 80 }
-                                ]
-                            }
-                        ],
-                        rules: {
-                            "thingId": webix.rules.isNotEmpty,
-                            "itemKey": webix.rules.isNotEmpty
-                        }
-                    },
-                    {
-                        id: "deviceList",
-                        view: "list",
-                        template: "#thingId# - #itemKey#",
-                        data: [],
-                        yCount: 3,
-                        autoheight: true
-                    }
-                ]
-            }
-        },
-
-        coordinatePanel: {
-            header: "Coordinates",
-            body: {
-                rows: [
-                    {
-                        view: "form",
-                        id: "filterForm",
-                        elements: [
-                            {
-                                cols: [
-                                    { view: "datepicker", label: 'Start Time', timepicker: true },
-                                    { view: "datepicker", label: 'End Time', timepicker: true },
-                                    { view: "button", value: "Filter", name: "filterButton", type: "form" }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        id: "coordinates",
-                        view: "datatable",
-                        columns: [],
-                        select: "row",
-                        resizeColumn:true
-                    }
-                ]
-            }
-        },
-
-        googleMap: {
-            id: "map",
-            view: "google-map",
-            zoom: 15
-        },
-
         render: function () {
             // Custom Webix View
             // TODO: Dodgy way of including it :/
+            // TODO: Fix up later
             var googleMapModel = new GoogleMapModel();
+            var devicePanelModel = new DevicePanelModel();
+            var dataTableModel = new DataTableModel();
+
+            // Proto UI
             webix.protoUI(googleMapModel.getWebixModel(), webix.ui.view);
 
             // Render Webix layout
             webix.ui({
                 type: "wide",
                 rows: [
-                    this.googleMap,
+                    {
+                        id: "map",
+                        view: "google-map",
+                        zoom: 15
+                    },
                     { view: "resizer" },
                     {
                         height: 300,
                         cols: [
-                            this.devicesPanel,
-                            this.coordinatePanel
+                            devicePanelModel.getWebixModel(),
+                            dataTableModel.getWebixModel()
                         ]
                     }
                 ]
